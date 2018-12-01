@@ -1,24 +1,25 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 import argparse
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 from PIL import Image
 import numpy as np
 
-teas = {'chamomile': [212, 125, 31],
-        'hibiscus': [124, 5, 22],
-        'gunpowder': [191, 134, 59],
-        'echinacea': [226, 157, 46],
-        'cinnamon': [206, 10, 28],
-        'turmeric': [242, 183, 44],
-        'rose': [244, 147, 131],
-        'lemon verbana': [202, 163, 62],
-        'mallow': [64, 132, 129],
-        'calendula': [169, 75, 19],
-        'purple basil': [96, 45, 76],
-        'lemongrass': [216, 208, 133],
-        'jasmine blossom': [240, 212, 128]
+teas = {'chamomile': np.array([212, 125, 31]),
+        'hibiscus': np.array([124, 5, 22]),
+        'gunpowder': np.array([191, 134, 59]),
+        'echinacea': np.array([226, 157, 46]),
+        'cinnamon': np.array([206, 10, 28]),
+        'turmeric': np.array([242, 183, 44]),
+        'rose': np.array([244, 147, 131]),
+        'lemon verbana': np.array([202, 163, 62]),
+        'mallow': np.array([64, 132, 129]),
+        'calendula': np.array([169, 75, 19]),
+        'purple basil': np.array([96, 45, 76]),
+        'lemongrass': np.array([216, 208, 133]),
+        'jasmine blossom': np.array([240, 212, 128])
         }
 
 tea_gram = 2000
@@ -31,7 +32,7 @@ def read_image(filename: str) -> np.ndarray:
 
 
 def get_distance(p1, p2):
-    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1]) + abs(p1[2] - p2[2])
+    return np.abs((p1 - p2)).sum()
 
 
 def get_nearest_tea(pixel: list) -> str:
@@ -75,12 +76,17 @@ def img2tea(filename: str) -> str:
 
     current_teas = defaultdict(int)
 
-    # Count nearest tea occurrences in image
-    for row in range(image.shape[0]):
-        for col in range(image.shape[1]):
-            pixel = image[row, col]
-            nearest_tea = get_nearest_tea(pixel)
-            current_teas[nearest_tea] += 1
+    # Count nearest teas
+    all_distances = []
+    for tea, tea_value in teas.items():
+        distances = np.abs(image[:, :, :3] - tea_value).sum(axis=-1)
+        all_distances.append(distances)
+    all_distances = np.stack(all_distances)
+    min_distances = np.argmin(all_distances, axis=0)
+
+    for i, tea in enumerate(teas.keys()):
+        counts = np.where(min_distances == i)[0]
+        current_teas[tea] = len(counts)
 
     # Count total tea
     total_tea_count = 0

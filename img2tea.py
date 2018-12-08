@@ -5,6 +5,8 @@ from collections import defaultdict
 
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 teas = {'chamomile': np.array([212, 125, 31]),
         'hibiscus': np.array([124, 5, 22]),
@@ -77,11 +79,28 @@ def img2tea(filename: str) -> str:
 
     # Count nearest teas
     all_distances = []
-    for tea, tea_value in teas.items():
+    tea_list = list(teas.keys())
+    for tea in tea_list:
+        tea_value = teas[tea]
         distances = np.abs(image[:, :, :3] - tea_value).sum(axis=-1)
         all_distances.append(distances)
     all_distances = np.stack(all_distances)
     min_distances = np.argmin(all_distances, axis=0)
+
+    colors = np.zeros(shape=(min_distances.shape[0], min_distances.shape[1], 3))
+    for tea_index, tea in enumerate(tea_list):
+        tea_value = teas[tea]
+        colors[min_distances == tea_index] = tea_value / 255.0
+
+    handles = []
+    for tea in tea_list:
+        tea_value = teas[tea]
+        handles.append(mpatches.Patch(color=tea_value / 255.0, label=tea))
+
+    plt.figure(figsize=(12, 10))
+    plt.imshow(colors)
+    plt.legend(handles=handles, bbox_to_anchor=(1.04, 1), loc="upper left")
+    plt.savefig('teas.jpg')
 
     for i, tea in enumerate(teas.keys()):
         counts = np.where(min_distances == i)[0]
